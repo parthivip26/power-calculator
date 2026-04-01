@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Power Calculator</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #f8fafc;
+      color: #334155;
+      min-height: 100vh;
+      padding: 40px 16px;
+    }
+
+    h1 {
+      text-align: center;
+      font-size: 2rem;
+      font-weight: 800;
+      color: #0d9488;
+      margin-bottom: 6px;
+      letter-spacing: -0.5px;
+    }
+
+    .subtitle {
+      text-align: center;
+      font-size: 0.95rem;
+      color: #64748b;
+      margin-bottom: 32px;
+    }
+
+    .container {
+      max-width: 1040px;
+      margin: 0 auto;
+    }
+
+    /* ── Tabs ── */
+    .tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 24px;
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 6px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    }
+
+    .tab-btn {
+      flex: 1;
+      padding: 11px 16px;
+      border: none;
+      border-radius: 8px;
+      font-size: 0.92rem;
+      font-weight: 600;
+      cursor: pointer;
+      background: transparent;
+      color: #64748b;
+      transition: all 0.2s;
+    }
+
+    .tab-btn.active {
+      background: #0d9488;
+      color: #ffffff;
+      box-shadow: 0 2px 8px rgba(13, 148, 136, 0.3);
+    }
+
+    .tab-btn:hover:not(.active) {
+      background: #f1f5f9;
+      color: #334155;
+    }
+
+    /* ── Card ── */
+    .card {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+      border-radius: 16px;
+      padding: 32px;
+    }
+
+    .card-title {
+      font-size: 0.85rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: #0284c7;
+      margin-bottom: 28px;
+      display: flex;
+      align-items: center;
+    }
+
+    .card-title::after {
+      content: "";
+      height: 1px;
+      background: #e2e8f0;
+      flex-grow: 1;
+      margin-left: 15px;
+    }
+
+    /* ── Split layout ── */
+    .split-layout {
+      display: grid;
+      grid-template-columns: 1fr 1px 1fr;
+      gap: 0 40px;
+      align-items: start;
+    }
+
+    .split-divider {
+      background: #e2e8f0;
+      align-self: stretch;
+    }
+
+    .panel-title {
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: #94a3b8;
+      margin-bottom: 20px;
+    }
+
+    /* ── Inputs ── */
+    .field {
+      margin-bottom: 16px;
+    }
+
+    .field label {
+      display: block;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: #475569;
+      margin-bottom: 8px;
+    }
+
+    .col-ref {
+      display: inline-block;
+      background: #f1f5f9;
+      color: #0284c7;
+      font-size: 0.65rem;
+      font-weight: 800;
+      padding: 2px 6px;
+      border-radius: 4px;
+      margin-right: 6px;
+    }
+
+    .field input {
+      width: 100%;
+      background: #ffffff;
+      border: 2px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 12px;
+      font-size: 1rem;
+      color: #1e293b;
+      outline: none;
+      transition: all 0.2s;
+    }
+
+    .field input:focus {
+      border-color: #0d9488;
+      box-shadow: 0 0 0 4px rgba(13, 148, 136, 0.1);
+    }
+
+    .field input.auto {
+      background-color: #f8fafc;
+      color: #94a3b8;
+      font-style: italic;
+    }
+
+    .field .hint {
+      font-size: 0.75rem;
+      color: #94a3b8;
+      margin-top: 6px;
+    }
+
+    /* ── D + J = P inline row ── */
+    .loss-equation {
+      display: flex;
+      align-items: flex-end;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    .loss-equation .field {
+      flex: 1;
+      margin-bottom: 0;
+    }
+
+    .eq-operator {
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: #cbd5e1;
+      padding-bottom: 11px;
+      flex-shrink: 0;
+    }
+
+    .total-loss-box {
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .total-loss-box .tl-label {
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: #475569;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      white-space: nowrap;
+    }
+
+    .total-loss-box .tl-label .col-ref {
+      background: #ccfbf1;
+      color: #0d9488;
+    }
+
+    .total-loss-value {
+      background: #f0fdfa;
+      border: 2px solid #99f6e4;
+      border-radius: 10px;
+      padding: 10px 16px;
+      font-size: 1.05rem;
+      font-weight: 800;
+      color: #0d9488;
+      white-space: nowrap;
+      min-width: 80px;
+      text-align: center;
+    }
+
+    /* ── Buttons ── */
+    .btn-row {
+      display: flex;
+      gap: 12px;
+      margin-top: 24px;
+      flex-wrap: wrap;
+    }
+
+    button {
+      padding: 12px 32px;
+      border: none;
+      border-radius: 10px;
+      font-size: 0.95rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    button:active { transform: scale(0.98); }
+
+    .btn-primary {
+      background: #0d9488;
+      color: #ffffff;
+      box-shadow: 0 4px 14px 0 rgba(13, 148, 136, 0.3);
+    }
+    .btn-primary:hover   { background: #0f766e; }
+    .btn-secondary       { background: #f1f5f9; color: #475569; }
+    .btn-secondary:hover { background: #e2e8f0; }
+
+    /* ── Output rows ── */
+    .output-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 13px 16px;
+      border-radius: 10px;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      margin-bottom: 10px;
+      gap: 12px;
+    }
+
+    .output-row.highlight {
+      background: #f0fdfa;
+      border-color: #99f6e4;
+    }
+
+    .output-row-label {
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: #64748b;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+
+    .output-row-label .col-ref { background: #e2e8f0; }
+    .output-row.highlight .output-row-label .col-ref {
+      background: #ccfbf1;
+      color: #0d9488;
+    }
+
+    .output-row-value {
+      font-size: 1.05rem;
+      font-weight: 800;
+      color: #1e293b;
+      text-align: right;
+      white-space: nowrap;
+    }
+
+    .output-row.highlight .output-row-value { color: #0d9488; }
+
+    .unit {
+      font-size: 0.75rem;
+      font-weight: 500;
+      color: #94a3b8;
+      margin-left: 3px;
+    }
+
+    .placeholder { color: #cbd5e1; font-weight: 400; }
+
+    /* ── Output group separator ── */
+    .out-sep {
+      border: none;
+      border-top: 1px dashed #e2e8f0;
+      margin: 14px 0;
+    }
+
+    .out-group-label {
+      font-size: 0.68rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: #94a3b8;
+      margin-bottom: 10px;
+    }
+
+    /* ── Error ── */
+    .error-msg {
+      color: #dc2626;
+      background: #fef2f2;
+      padding: 12px;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      margin-top: 16px;
+      display: none;
+      border: 1px solid #fee2e2;
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 680px) {
+      h1 { font-size: 1.5rem; }
+      .split-layout { grid-template-columns: 1fr; }
+      .split-divider { display: none; }
+      .tabs { flex-direction: column; }
+      .loss-equation { flex-wrap: wrap; }
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <h1>Power Calculator</h1>
+  <p class="subtitle">ERP / EIRP &amp; Power Reduction Calculator</p>
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <button class="tab-btn active" onclick="showTab('erp')">ERP / EIRP Calculator</button>
+    <button class="tab-btn"        onclick="showTab('reduction')">Power Reduction</button>
+  </div>
+
+  <!-- ════ TAB 1: ERP / EIRP ════ -->
+  <div id="tab-erp">
+    <div class="card">
+      <div class="card-title">ERP / EIRP Calculator</div>
+
+      <div class="split-layout">
+
+        <!-- ── Inputs ── -->
+        <div>
+          <div class="panel-title">Inputs</div>
+
+          <div class="field">
+            <label><span class="col-ref">COL A</span>Power before loss</label>
+            <input type="number" id="a_A" value="320" min="0" step="any" oninput="calcERP()" />
+            <div class="hint">Watts (W)</div>
+          </div>
+
+          <div class="field">
+            <label><span class="col-ref">COL B</span>Gain of antenna (dBi)</label>
+            <input type="number" id="a_B" value="21" step="any" oninput="onBChange()" />
+            <div class="hint">dBi — auto-updates dBd below</div>
+          </div>
+
+          <div class="field">
+            <label><span class="col-ref">COL C</span>Gain of antenna (dBd)</label>
+            <input type="number" id="a_C" step="any" class="auto" placeholder="auto" oninput="onCChange()" />
+            <div class="hint">dBd — auto-updates dBi above</div>
+          </div>
+
+          <!-- D + J = P equation row -->
+          <div class="loss-equation">
+            <div class="field">
+              <label><span class="col-ref">COL D</span>Transmission Loss</label>
+              <input type="number" id="a_D" value="0" step="any" oninput="calcERP()" />
+              <div class="hint">dB</div>
+            </div>
+
+            <div class="eq-operator">+</div>
+
+            <div class="field">
+              <label><span class="col-ref">COL J</span>Duty Cycle</label>
+              <input type="number" id="a_J" value="0" step="any" oninput="calcERP()" />
+              <div class="hint">dB</div>
+            </div>
+
+            <div class="eq-operator">=</div>
+
+            <div class="total-loss-box">
+              <div class="tl-label"><span class="col-ref">COL P</span>Total Loss</div>
+              <div class="total-loss-value" id="o_P">—</div>
+            </div>
+          </div>
+
+          <div class="btn-row">
+            <button class="btn-primary"   onclick="calcERP()">Calculate</button>
+            <button class="btn-secondary" onclick="resetERP()">Reset</button>
+          </div>
+          <div class="error-msg" id="errERP"></div>
+        </div>
+
+        <!-- Divider -->
+        <div class="split-divider"></div>
+
+        <!-- ── Outputs ── -->
+        <div>
+          <div class="panel-title">Results</div>
+
+          <!-- Before / After -->
+          <div class="out-group-label">Before &amp; After Power</div>
+
+          <div class="output-row">
+            <span class="output-row-label"><span class="col-ref">COL Q</span>dBm Before</span>
+            <span class="output-row-value" id="o_Q"><span class="placeholder">—</span></span>
+          </div>
+
+          <div class="output-row">
+            <span class="output-row-label"><span class="col-ref">COL R</span>dBm After Loss</span>
+            <span class="output-row-value" id="o_R"><span class="placeholder">—</span></span>
+          </div>
+
+          <div class="output-row">
+            <span class="output-row-label"><span class="col-ref">COL S</span>Power After Loss</span>
+            <span class="output-row-value" id="o_S"><span class="placeholder">—</span></span>
+          </div>
+
+          <hr class="out-sep" />
+
+          <!-- ERP / EiRP -->
+          <div class="out-group-label">Radiated Power</div>
+
+          <div class="output-row highlight">
+            <span class="output-row-label"><span class="col-ref">COL T</span>ERP</span>
+            <span class="output-row-value" id="o_T"><span class="placeholder">—</span></span>
+          </div>
+
+          <div class="output-row highlight">
+            <span class="output-row-label"><span class="col-ref">COL U</span>EiRP</span>
+            <span class="output-row-value" id="o_U"><span class="placeholder">—</span></span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ════ TAB 2: Power Reduction ════ -->
+  <div id="tab-reduction" style="display:none">
+    <div class="card">
+      <div class="card-title">Power Reduction Calculator</div>
+
+      <div class="split-layout">
+
+        <!-- Inputs -->
+        <div>
+          <div class="panel-title">Inputs</div>
+
+          <div class="field">
+            <label><span class="col-ref">COL V</span>Original Power</label>
+            <input type="number" id="r_V" value="320" min="0" step="any" oninput="calcReduction()" />
+            <div class="hint">Watts (W) — your starting power</div>
+          </div>
+
+          <div class="field">
+            <label><span class="col-ref">COL W</span>Reduced Power</label>
+            <input type="number" id="r_W" value="20" min="0" step="any" oninput="calcReduction()" />
+            <div class="hint">Watts (W) — target power after reduction</div>
+          </div>
+
+          <div class="btn-row">
+            <button class="btn-primary"   onclick="calcReduction()">Calculate</button>
+            <button class="btn-secondary" onclick="resetReduction()">Reset</button>
+          </div>
+          <div class="error-msg" id="errRed"></div>
+        </div>
+
+        <!-- Divider -->
+        <div class="split-divider"></div>
+
+        <!-- Outputs -->
+        <div>
+          <div class="panel-title">Results</div>
+
+          <div class="output-row">
+            <span class="output-row-label"><span class="col-ref">COL X</span>New Power in dBm</span>
+            <span class="output-row-value" id="o_X"><span class="placeholder">—</span></span>
+          </div>
+
+          <div class="output-row">
+            <span class="output-row-label"><span class="col-ref">COL Y</span>Original Power in dBm</span>
+            <span class="output-row-value" id="o_Y"><span class="placeholder">—</span></span>
+          </div>
+
+          <div class="output-row highlight">
+            <span class="output-row-label"><span class="col-ref">COL Z</span>Loss Required</span>
+            <span class="output-row-value" id="o_Z"><span class="placeholder">—</span></span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  const DBd2DBi = 2.15;
+
+  /* ── dBi / dBd sync ── */
+  function onBChange() {
+    const b = parseFloat(document.getElementById('a_B').value);
+    const cField = document.getElementById('a_C');
+    if (!isNaN(b)) {
+      cField.value = (b - DBd2DBi).toFixed(4);
+      cField.classList.add('auto');
+    }
+    calcERP();
+  }
+
+  function onCChange() {
+    const c = parseFloat(document.getElementById('a_C').value);
+    if (!isNaN(c)) {
+      document.getElementById('a_B').value = (c + DBd2DBi).toFixed(4);
+      document.getElementById('a_C').classList.remove('auto');
+    }
+    calcERP();
+  }
+
+  /* ── Formatting ── */
+  function fmt(v, dec) {
+    if (v === null || v === undefined || isNaN(v) || !isFinite(v)) return null;
+    if (Math.abs(v) >= 1e7) return v.toExponential(3);
+    return v.toFixed(dec);
+  }
+
+  function setOut(id, v, dec, unit) {
+    const el = document.getElementById(id);
+    const val = fmt(v, dec);
+    el.innerHTML = val === null
+      ? '<span class="placeholder">—</span>'
+      : `${val}<span class="unit">${unit}</span>`;
+  }
+
+  /* ── ERP / EIRP Calculator ── */
+  function calcERP() {
+    document.getElementById('errERP').style.display = 'none';
+
+    const A = parseFloat(document.getElementById('a_A').value);
+    const B = parseFloat(document.getElementById('a_B').value);
+    const C = parseFloat(document.getElementById('a_C').value);
+    const D = parseFloat(document.getElementById('a_D').value) || 0;
+    const J = parseFloat(document.getElementById('a_J').value) || 0;
+
+    if (isNaN(A) || A <= 0) {
+      showErr('errERP', 'Power before loss (W) must be a positive number.');
+      return;
+    }
+    if (isNaN(B) && isNaN(C)) {
+      showErr('errERP', 'Enter at least one antenna gain value (dBi or dBd).');
+      return;
+    }
+
+    const B_eff = isNaN(B) ? C + DBd2DBi : B;
+    const C_eff = isNaN(C) ? B - DBd2DBi : C;
+
+    if (isNaN(B)) { document.getElementById('a_B').value = B_eff.toFixed(4); }
+    if (isNaN(C)) {
+      document.getElementById('a_C').value = C_eff.toFixed(4);
+      document.getElementById('a_C').classList.add('auto');
+    }
+
+    // Col P: Total Loss
+    const P = D + J;
+    document.getElementById('o_P').textContent = P.toFixed(2) + ' dB';
+
+    // Col Q: dBm Before
+    const Q = 10 * Math.log10(A * 1000);
+
+    // Col R: dBm After total loss
+    const R = Q - P;
+
+    // Col S: Power (W) after total loss
+    const S = Math.pow(10, R / 10) / 1000;
+
+    // Col T: ERP (W) using dBd
+    const T = S * Math.pow(10, C_eff / 10);
+
+    // Col U: EiRP (W) using dBi
+    const U = S * Math.pow(10, B_eff / 10);
+
+    setOut('o_Q', Q, 2, ' dBm');
+    setOut('o_R', R, 2, ' dBm');
+    setOut('o_S', S, 2, ' W');
+    setOut('o_T', T, 2, ' W');
+    setOut('o_U', U, 2, ' W');
+  }
+
+  function resetERP() {
+    document.getElementById('a_A').value = '320';
+    document.getElementById('a_B').value = '21';
+    document.getElementById('a_C').value = '';
+    document.getElementById('a_C').classList.add('auto');
+    document.getElementById('a_D').value = '0';
+    document.getElementById('a_J').value = '0';
+    document.getElementById('errERP').style.display = 'none';
+    onBChange();
+  }
+
+  /* ── Power Reduction Calculator ── */
+  function calcReduction() {
+    document.getElementById('errRed').style.display = 'none';
+
+    const V = parseFloat(document.getElementById('r_V').value);
+    const W = parseFloat(document.getElementById('r_W').value);
+
+    if (isNaN(V) || V <= 0) { showErr('errRed', 'Original power must be a positive number.'); return; }
+    if (isNaN(W) || W <= 0) { showErr('errRed', 'Reduced power must be a positive number.'); return; }
+
+    const Y = 10 * Math.log10(V * 1000);
+    const X = 10 * Math.log10(W * 1000);
+    const Z = Y - X;
+
+    setOut('o_X', X, 2, ' dBm');
+    setOut('o_Y', Y, 2, ' dBm');
+    setOut('o_Z', Z, 2, ' dB');
+  }
+
+  function resetReduction() {
+    document.getElementById('r_V').value = '320';
+    document.getElementById('r_W').value = '20';
+    document.getElementById('errRed').style.display = 'none';
+    calcReduction();
+  }
+
+  /* ── Tab switching ── */
+  function showTab(tab) {
+    document.getElementById('tab-erp').style.display       = tab === 'erp'       ? 'block' : 'none';
+    document.getElementById('tab-reduction').style.display = tab === 'reduction' ? 'block' : 'none';
+    document.querySelectorAll('.tab-btn').forEach((btn, i) => {
+      btn.classList.toggle('active',
+        (i === 0 && tab === 'erp') || (i === 1 && tab === 'reduction')
+      );
+    });
+  }
+
+  /* ── Error helper ── */
+  function showErr(id, msg) {
+    const el = document.getElementById(id);
+    el.textContent = msg;
+    el.style.display = 'block';
+  }
+
+  /* Auto-calculate on load */
+  window.addEventListener('load', () => {
+    onBChange();
+    calcReduction();
+  });
+</script>
+</body>
+</html>
