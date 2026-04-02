@@ -1,0 +1,773 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Radio Power Lookup</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #f8fafc;
+      color: #334155;
+      min-height: 100vh;
+      padding: 40px 16px;
+    }
+
+    h1 {
+      text-align: center;
+      font-size: 2rem;
+      font-weight: 800;
+      color: #0d9488;
+      margin-bottom: 6px;
+    }
+
+    .subtitle {
+      text-align: center;
+      font-size: 0.95rem;
+      color: #64748b;
+      margin-bottom: 32px;
+    }
+
+    .container { max-width: 900px; margin: 0 auto; }
+
+    /* ── Tabs ── */
+    .tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 24px;
+      background: #fff;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 6px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    }
+
+    .tab-btn {
+      flex: 1;
+      padding: 11px 16px;
+      border: none;
+      border-radius: 8px;
+      font-size: 0.92rem;
+      font-weight: 600;
+      cursor: pointer;
+      background: transparent;
+      color: #64748b;
+      transition: all 0.2s;
+    }
+
+    .tab-btn.active {
+      background: #0d9488;
+      color: #fff;
+      box-shadow: 0 2px 8px rgba(13,148,136,0.3);
+    }
+
+    .tab-btn:hover:not(.active) { background: #f1f5f9; color: #334155; }
+
+    /* ── Cards ── */
+    .card {
+      background: #fff;
+      border: 1px solid #e2e8f0;
+      border-radius: 16px;
+      padding: 28px 32px;
+      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.07);
+      margin-bottom: 24px;
+    }
+
+    .card-title {
+      font-size: 0.78rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: #0284c7;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+    }
+
+    .card-title::after {
+      content: "";
+      height: 1px;
+      background: #e2e8f0;
+      flex-grow: 1;
+      margin-left: 12px;
+    }
+
+    .field label {
+      display: block;
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: #475569;
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+    }
+
+    /* ══════════════════════════════════════
+       SEARCHABLE COMBOBOX
+    ══════════════════════════════════════ */
+    .combo-wrap {
+      position: relative;
+      width: 100%;
+    }
+
+    .combo-input-row {
+      display: flex;
+      align-items: center;
+      border: 2px solid #e2e8f0;
+      border-radius: 10px;
+      background: #fff;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      overflow: hidden;
+    }
+
+    .combo-input-row:focus-within {
+      border-color: #0d9488;
+      box-shadow: 0 0 0 4px rgba(13,148,136,0.1);
+    }
+
+    .combo-input {
+      flex: 1;
+      padding: 13px 12px;
+      border: none;
+      outline: none;
+      font-size: 1rem;
+      color: #1e293b;
+      background: transparent;
+      font-family: inherit;
+    }
+
+    .combo-input::placeholder { color: #94a3b8; }
+
+    .combo-clear {
+      padding: 0 8px;
+      font-size: 1.1rem;
+      color: #94a3b8;
+      cursor: pointer;
+      background: none;
+      border: none;
+      line-height: 1;
+      display: none;
+    }
+
+    .combo-clear:hover { color: #475569; }
+
+    .combo-arrow {
+      padding: 0 14px;
+      font-size: 0.75rem;
+      color: #94a3b8;
+      cursor: pointer;
+      background: none;
+      border: none;
+      border-left: 1px solid #e2e8f0;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 48px;
+      transition: color 0.15s;
+    }
+
+    .combo-arrow:hover { color: #0d9488; background: #f8fafc; }
+
+    .combo-arrow.open { color: #0d9488; }
+
+    .combo-dropdown {
+      position: absolute;
+      top: calc(100% + 6px);
+      left: 0;
+      right: 0;
+      background: #fff;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 10px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+      z-index: 100;
+      max-height: 260px;
+      overflow-y: auto;
+      display: none;
+    }
+
+    .combo-dropdown.open { display: block; }
+
+    .combo-option {
+      padding: 11px 16px;
+      cursor: pointer;
+      font-size: 0.95rem;
+      color: #334155;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      border-bottom: 1px solid #f1f5f9;
+      transition: background 0.1s;
+    }
+
+    .combo-option:last-child { border-bottom: none; }
+    .combo-option:hover { background: #f0fdfa; color: #0d9488; }
+    .combo-option.selected { background: #f0fdfa; font-weight: 700; color: #0d9488; }
+
+    .combo-option .opt-badge {
+      font-size: 0.62rem;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 10px;
+      text-transform: uppercase;
+    }
+
+    .combo-no-results {
+      padding: 14px 16px;
+      font-size: 0.88rem;
+      color: #94a3b8;
+      text-align: center;
+    }
+
+    .combo-highlight { background: #fef9c3; border-radius: 2px; }
+
+    /* ── Badges ── */
+    .badge {
+      font-size: 0.68rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      padding: 3px 10px;
+      border-radius: 20px;
+      letter-spacing: 0.5px;
+      white-space: nowrap;
+    }
+
+    .badge-inbuilding { background: #ede9fe; color: #6d28d9; }
+    .badge-ericsson   { background: #fef3c7; color: #b45309; }
+    .badge-samsung    { background: #dbeafe; color: #1d4ed8; }
+    .badge-outdoor    { background: #ccfbf1; color: #0d9488; }
+
+    /* ── Note box ── */
+    .note-box {
+      background: #fefce8;
+      border: 1px solid #fde68a;
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 0.82rem;
+      color: #854d0e;
+      margin-bottom: 18px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* ── Tables ── */
+    table { width: 100%; border-collapse: collapse; }
+
+    th {
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: #64748b;
+      padding: 9px 14px;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      text-align: center;
+      white-space: nowrap;
+    }
+
+    th:first-child { text-align: left; }
+
+    td {
+      padding: 11px 14px;
+      border: 1px solid #e2e8f0;
+      text-align: center;
+      font-size: 0.92rem;
+      font-weight: 600;
+      color: #334155;
+    }
+
+    td:first-child { text-align: left; background: #f8fafc; }
+    tr:hover td, tr:hover td:first-child { background: #f0fdfa; }
+
+    .power-val { color: #0d9488; font-weight: 800; }
+    .zero-val  { color: #cbd5e1; }
+    .empty-val { color: #e2e8f0; }
+    .opt-label { font-size: 0.75rem; font-weight: 700; color: #94a3b8; }
+
+    .radio-header { display: flex; align-items: center; gap: 12px; margin-bottom: 18px; flex-wrap: wrap; }
+    .radio-name-lg { font-size: 1.4rem; font-weight: 800; color: #0d9488; }
+
+    .total-capacity-box {
+      margin-left: auto;
+      background: #f0fdfa;
+      border: 2px solid #99f6e4;
+      border-radius: 12px;
+      padding: 10px 20px;
+      text-align: center;
+    }
+
+    .total-capacity-label {
+      font-size: 0.68rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: #0d9488;
+      margin-bottom: 2px;
+    }
+
+    .total-capacity-value {
+      font-size: 1.3rem;
+      font-weight: 800;
+      color: #0d9488;
+    }
+
+    .tech-radio-title { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+    .tech-radio-name  { font-size: 1.05rem; font-weight: 800; color: #1e293b; }
+
+    .summary-scroll  { overflow-x: auto; }
+    .summary-radio-cell { font-weight: 800; color: #1e293b; white-space: nowrap; }
+
+    .placeholder-msg {
+      text-align: center;
+      padding: 36px 0;
+      color: #cbd5e1;
+      font-size: 0.92rem;
+    }
+
+    .section-sep {
+      font-size: 0.68rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: #94a3b8;
+      margin: 10px 0 8px;
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <h1>Radio Power Lookup</h1>
+  <p class="subtitle">Find power combinations by radio model or by technology</p>
+
+  <div class="tabs">
+    <button class="tab-btn active" onclick="showTab('byRadio')">By Radio Model</button>
+    <button class="tab-btn"        onclick="showTab('byTech')">By Technology</button>
+    <button class="tab-btn"        onclick="showTab('summary')">Summary Table</button>
+  </div>
+
+  <!-- ══ TAB 1: BY RADIO ══ -->
+  <div id="tab-byRadio">
+    <div class="card">
+      <div class="card-title">Select Radio / Antenna Model</div>
+      <div class="field">
+        <label>Radio Model</label>
+        <div class="combo-wrap" id="radioCombo"></div>
+      </div>
+    </div>
+    <div class="card" id="radioResult" style="display:none">
+      <div class="radio-header">
+        <div class="radio-name-lg" id="radioTitle"></div>
+        <div id="radioBadge"></div>
+        <div id="radioCapacity"></div>
+      </div>
+      <div class="note-box" id="radioNote" style="display:none">
+        <span>&#9432;</span><span id="radioNoteText"></span>
+      </div>
+      <div class="section-sep">Power Combinations (Watts)</div>
+      <div id="radioComboContent"></div>
+    </div>
+  </div>
+
+  <!-- ══ TAB 2: BY TECHNOLOGY ══ -->
+  <div id="tab-byTech" style="display:none">
+    <div class="card">
+      <div class="card-title">Filter by Technology / Band</div>
+      <div class="field">
+        <label>Technology</label>
+        <div class="combo-wrap" id="techCombo"></div>
+      </div>
+    </div>
+    <div id="techResults"></div>
+  </div>
+
+  <!-- ══ TAB 3: SUMMARY ══ -->
+  <div id="tab-summary" style="display:none">
+    <div class="card">
+      <div class="card-title">All Radios — Power Summary</div>
+      <div class="summary-scroll">
+        <table id="summaryTable"></table>
+      </div>
+    </div>
+  </div>
+
+</div>
+<script>
+  /* ══════════════════════════════════════
+     DATA
+  ══════════════════════════════════════ */
+  const radios = [
+    { name:"4490",         vendor:"Ericsson", category:"Outdoor",    combos:[{ "700 MHz":240, "850 MHz":240 }] },
+    { name:"4449",         vendor:"Ericsson", category:"Outdoor",    combos:[{ "700 MHz":160, "850 MHz":160 }] },
+    { name:"4455",         vendor:"Ericsson", category:"Outdoor",    combos:[{ "PCS":80,"AWS":80,"AWS3":0 },{ "PCS":80,"AWS":40,"AWS3":40 }] },
+    { name:"4890",         vendor:"Ericsson", category:"Outdoor",    notes:"Together 2100 MHz (AWS + AWS3) = 240W total",
+                                                   combos:[{ "PCS":240,"AWS":240,"AWS3":0 },{ "PCS":240,"AWS":120,"AWS3":120 }] },
+    { name:"8843",         vendor:"Ericsson", category:"Outdoor",    combos:[{ "PCS":160,"AWS":80,"AWS3":80 },{ "PCS":160,"AWS":160,"AWS3":0 }] },
+    { name:"8863",         vendor:"Ericsson", category:"Outdoor",    notes:"S4-90M-R1B CommScope antenna. Usually with JMA antenna.",
+                                                   combos:[{ "C-band":320 }] },
+    { name:"AIR 3283",     vendor:"Ericsson", category:"Outdoor",    combos:[
+                                                     { "PCS":80, "AWS":240,"AWS3":0   },
+                                                     { "PCS":160,"AWS":80, "AWS3":80  },
+                                                     { "PCS":160,"AWS":160,"AWS3":0   },
+                                                     { "PCS":80, "AWS":120,"AWS3":120 }
+                                                   ] },
+    { name:"AIR 3268",     vendor:"Ericsson", category:"Outdoor",    notes:"Dtech takes 60W",  combos:[{ "CBRS":"34–100" }] },
+    { name:"AIR 1672",     vendor:"Ericsson", category:"Outdoor",    combos:[{ "C-band":80 }] },
+    { name:"AIR 6449",     vendor:"Ericsson", category:"Outdoor",    combos:[{ "C-band":320 }] },
+    { name:"AIR 6419",     vendor:"Ericsson", category:"Outdoor",    combos:[{ "C-band":320 }] },
+    { name:"AIR 1279",     vendor:"Ericsson", category:"Outdoor",    notes:"Power data not available — verify before use", combos:[] },
+    { name:"4461",         vendor:"Ericsson", category:"Outdoor",    notes:"4 × 40W ports",    combos:[{ "C-band":160 }] },
+    { name:"4xRUL01 B13",  vendor:"Ericsson", category:"Outdoor",    notes:"30W per port",     combos:[{ "700 MHz":60 }] },
+    { name:"RRUS32 B2",    vendor:"Ericsson", category:"Outdoor",    combos:[{ "PCS":160 }] },
+    { name:"RRUS32 B66A",  vendor:"Ericsson", category:"Outdoor",    combos:[{ "AWS":80,"AWS3":80 },{ "AWS":160,"AWS3":0 }] },
+    { name:"SM6705_28_AC", vendor:"Samsung",  category:"Outdoor",    combos:[{ "mmW 28 GHz":1.3 }] },
+    { name:"SM6705_39",    vendor:"Samsung",  category:"Outdoor",    combos:[{ "mmW 39 GHz":1.3 }] },
+    { name:"SM6701",       vendor:"Samsung",  category:"Outdoor",    combos:[{ "C-band":0.6 }] },
+    { name:"DOT 4455",     vendor:"Ericsson", category:"Outdoor",    notes:"Needs verification — value may not be final", combos:[{ "PCS":0.5 }] },
+    { name:"AIR 4402",     vendor:"Ericsson", category:"Inbuilding", combos:[{ "PCS":20 },{ "AWS":20 }] },
+    { name:"AIR 4435",     vendor:"Ericsson", category:"Inbuilding", combos:[{ "C-band":60 }] },
+    { name:"4408",         vendor:"Ericsson", category:"Inbuilding", combos:[{ "CBRS":20 }] },
+    { name:"4435",         vendor:"Ericsson", category:"Inbuilding", notes:"Power data not available — verify before use", combos:[] }
+  ];
+
+  const techOrder = ["700 MHz","850 MHz","PCS","AWS","AWS3","CBRS","C-band","mmW 28 GHz","mmW 39 GHz","Total"];
+  const allBands = [];
+  radios.forEach(r => r.combos.forEach(c => Object.keys(c).forEach(b => { if (!allBands.includes(b)) allBands.push(b); })));
+
+  /* ══════════════════════════════════════
+     SEARCHABLE COMBOBOX FACTORY
+  ══════════════════════════════════════ */
+  function createCombo(container, options, placeholder, onSelect) {
+    // options: [{value, label, badge, badgeClass}]
+    let selectedValue = null;
+    let isOpen = false;
+
+    container.innerHTML = `
+      <div class="combo-input-row">
+        <input class="combo-input" type="text" placeholder="${placeholder}" autocomplete="off" />
+        <button class="combo-clear" title="Clear">&#x2715;</button>
+        <button class="combo-arrow" title="Toggle list">&#9660;</button>
+      </div>
+      <div class="combo-dropdown"></div>`;
+
+    const input    = container.querySelector('.combo-input');
+    const clearBtn = container.querySelector('.combo-clear');
+    const arrow    = container.querySelector('.combo-arrow');
+    const dropdown = container.querySelector('.combo-dropdown');
+
+    function highlight(text, query) {
+      if (!query) return text;
+      const idx = text.toLowerCase().indexOf(query.toLowerCase());
+      if (idx === -1) return text;
+      return text.slice(0, idx) +
+             `<span class="combo-highlight">${text.slice(idx, idx + query.length)}</span>` +
+             text.slice(idx + query.length);
+    }
+
+    function renderList(query) {
+      const filtered = options.filter(o => o.label.toLowerCase().includes((query || '').toLowerCase()));
+      if (filtered.length === 0) {
+        dropdown.innerHTML = `<div class="combo-no-results">No results for "${query}"</div>`;
+        return;
+      }
+      dropdown.innerHTML = filtered.map(o => `
+        <div class="combo-option ${o.value === selectedValue ? 'selected' : ''}" data-value="${o.value}">
+          ${highlight(o.label, query)}
+          ${o.badge ? `<span class="opt-badge badge-${o.badgeClass}">${o.badge}</span>` : ''}
+        </div>`).join('');
+
+      dropdown.querySelectorAll('.combo-option').forEach(el => {
+        el.addEventListener('mousedown', e => {
+          e.preventDefault();
+          selectOption(el.dataset.value);
+        });
+      });
+    }
+
+    function openDropdown() {
+      renderList(input.value);
+      dropdown.classList.add('open');
+      arrow.classList.add('open');
+      isOpen = true;
+    }
+
+    function closeDropdown() {
+      dropdown.classList.remove('open');
+      arrow.classList.remove('open');
+      isOpen = false;
+    }
+
+    function selectOption(val) {
+      selectedValue = val;
+      const opt = options.find(o => o.value === val);
+      input.value = opt ? opt.label : '';
+      clearBtn.style.display = val ? 'block' : 'none';
+      closeDropdown();
+      onSelect(val);
+    }
+
+    input.addEventListener('focus', () => openDropdown());
+    input.addEventListener('input', () => {
+      selectedValue = null;
+      clearBtn.style.display = input.value ? 'block' : 'none';
+      renderList(input.value);
+      if (!isOpen) openDropdown();
+      if (!input.value) onSelect(null);
+    });
+
+    input.addEventListener('blur', () => setTimeout(closeDropdown, 150));
+
+    arrow.addEventListener('click', () => {
+      if (isOpen) { closeDropdown(); }
+      else        { input.focus(); openDropdown(); }
+    });
+
+    clearBtn.addEventListener('click', () => {
+      input.value = '';
+      selectedValue = null;
+      clearBtn.style.display = 'none';
+      closeDropdown();
+      onSelect(null);
+      input.focus();
+    });
+
+    // Keyboard navigation
+    input.addEventListener('keydown', e => {
+      const items = [...dropdown.querySelectorAll('.combo-option')];
+      const cur   = dropdown.querySelector('.combo-option.selected');
+      let   idx   = items.indexOf(cur);
+
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        if (!isOpen) openDropdown();
+        idx = Math.min(idx + 1, items.length - 1);
+        items.forEach((el, i) => el.classList.toggle('selected', i === idx));
+        items[idx]?.scrollIntoView({ block: 'nearest' });
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        idx = Math.max(idx - 1, 0);
+        items.forEach((el, i) => el.classList.toggle('selected', i === idx));
+        items[idx]?.scrollIntoView({ block: 'nearest' });
+      } else if (e.key === 'Enter') {
+        e.preventDefault();
+        const sel = dropdown.querySelector('.combo-option.selected');
+        if (sel) selectOption(sel.dataset.value);
+      } else if (e.key === 'Escape') {
+        closeDropdown();
+      }
+    });
+  }
+
+  /* ══════════════════════════════════════
+     INIT COMBOS
+  ══════════════════════════════════════ */
+  createCombo(
+    document.getElementById('radioCombo'),
+    radios.map(r => ({
+      value: r.name,
+      label: r.name,
+      badge: r.vendor,
+      badgeClass: r.vendor === 'Samsung' ? 'samsung' : 'ericsson'
+    })),
+    'Type or select a radio model…',
+    showByRadio
+  );
+
+  createCombo(
+    document.getElementById('techCombo'),
+    techOrder.filter(b => allBands.includes(b)).map(b => ({ value: b, label: b })),
+    'Type or select a technology…',
+    showByTech
+  );
+
+  /* ══════════════════════════════════════
+     HELPERS
+  ══════════════════════════════════════ */
+  function vendorBadgeHTML(vendor) {
+    if (vendor === 'Samsung')  return '<span class="badge badge-samsung">Samsung</span>';
+    return '<span class="badge badge-ericsson">Ericsson</span>';
+  }
+
+  function categoryBadgeHTML(cat) {
+    if (cat === 'Inbuilding') return '<span class="badge badge-inbuilding">Inbuilding</span>';
+    return '<span class="badge badge-outdoor">Outdoor</span>';
+  }
+
+  function badgeHTML(cat, vendor) {
+    return vendorBadgeHTML(vendor) + ' ' + categoryBadgeHTML(cat);
+  }
+
+  function getTotal(combo) {
+    const nums = Object.values(combo).filter(v => typeof v === 'number');
+    if (!nums.length) return null;
+    return nums.reduce((a, b) => a + b, 0);
+  }
+
+  function getTotalCapacity(radio) {
+    if (!radio.combos || radio.combos.length === 0) return null;
+    // Use the max total across all combos
+    const totals = radio.combos.map(getTotal).filter(v => v !== null);
+    if (!totals.length) return null;
+    return Math.max(...totals);
+  }
+
+  function comboTableHTML(combos) {
+    if (!combos || combos.length === 0)
+      return '<div class="placeholder-msg">No power data available.</div>';
+
+    const bands = [];
+    combos.forEach(c => Object.keys(c).forEach(b => { if (!bands.includes(b)) bands.push(b); }));
+
+    let h = '<table><thead><tr><th>Option</th>';
+    bands.forEach(b => h += `<th>${b}</th>`);
+    h += '<th>Total</th></tr></thead><tbody>';
+
+    combos.forEach((combo, i) => {
+      h += `<tr><td class="opt-label">Option ${i + 1}</td>`;
+      bands.forEach(b => {
+        const v = combo[b];
+        if (v === undefined || v === null) h += `<td class="empty-val">—</td>`;
+        else if (v === 0)                  h += `<td class="zero-val">0 W</td>`;
+        else                               h += `<td class="power-val">${v} W</td>`;
+      });
+      const t = getTotal(combo);
+      h += t !== null ? `<td class="power-val" style="background:#f0fdfa">${t} W</td>` : `<td class="empty-val">—</td>`;
+      h += '</tr>';
+    });
+
+    h += '</tbody></table>';
+    return h;
+  }
+
+  /* ══════════════════════════════════════
+     TAB 1 — BY RADIO
+  ══════════════════════════════════════ */
+  function showByRadio(val) {
+    const resultDiv = document.getElementById('radioResult');
+    if (!val) { resultDiv.style.display = 'none'; return; }
+
+    const radio = radios.find(r => r.name === val);
+    if (!radio) return;
+
+    document.getElementById('radioTitle').textContent = radio.name;
+    document.getElementById('radioBadge').innerHTML   = badgeHTML(radio.category, radio.vendor);
+
+    const cap = getTotalCapacity(radio);
+    const capEl = document.getElementById('radioCapacity');
+    if (cap !== null) {
+      capEl.innerHTML = `<div class="total-capacity-box">
+        <div class="total-capacity-label">Total Capacity</div>
+        <div class="total-capacity-value">${cap} W</div>
+      </div>`;
+      capEl.style.display = 'block';
+    } else {
+      capEl.style.display = 'none';
+    }
+
+    const noteBox = document.getElementById('radioNote');
+    if (radio.notes) {
+      document.getElementById('radioNoteText').textContent = radio.notes;
+      noteBox.style.display = 'flex';
+    } else {
+      noteBox.style.display = 'none';
+    }
+
+    document.getElementById('radioComboContent').innerHTML = comboTableHTML(radio.combos);
+    resultDiv.style.display = 'block';
+  }
+
+  /* ══════════════════════════════════════
+     TAB 2 — BY TECHNOLOGY
+  ══════════════════════════════════════ */
+  function showByTech(band) {
+    const container = document.getElementById('techResults');
+    if (!band) { container.innerHTML = ''; return; }
+
+    const matching = radios.filter(r => r.combos.some(c => band in c));
+    if (matching.length === 0) {
+      container.innerHTML = '<div class="card"><div class="placeholder-msg">No radios found for this technology.</div></div>';
+      return;
+    }
+
+    container.innerHTML = matching.map(radio => {
+      const relevant = radio.combos.filter(c => band in c);
+      return `<div class="card">
+        <div class="tech-radio-title">
+          <div class="tech-radio-name">${radio.name}</div>
+          ${badgeHTML(radio.category, radio.vendor)}
+        </div>
+        ${radio.notes ? `<div class="note-box"><span>&#9432;</span><span>${radio.notes}</span></div>` : ''}
+        <div class="section-sep">Options using ${band}</div>
+        ${comboTableHTML(relevant)}
+      </div>`;
+    }).join('');
+  }
+
+  /* ══════════════════════════════════════
+     TAB 3 — SUMMARY TABLE
+  ══════════════════════════════════════ */
+  function buildSummaryTable() {
+    const visibleBands = techOrder.filter(b => allBands.includes(b));
+    let h = '<thead><tr><th>Radio</th><th>Vendor</th><th>Category</th><th>Option</th>';
+    visibleBands.forEach(b => h += `<th>${b}</th>`);
+    h += '<th>Notes</th></tr></thead><tbody>';
+
+    radios.forEach(radio => {
+      if (!radio.combos || radio.combos.length === 0) {
+        h += `<tr><td class="summary-radio-cell">${radio.name}</td>
+          <td>${vendorBadgeHTML(radio.vendor)}</td>
+          <td>${categoryBadgeHTML(radio.category)}</td>
+          <td class="opt-label">—</td>`;
+        visibleBands.forEach(() => h += `<td class="empty-val">—</td>`);
+        h += `<td style="font-size:0.78rem;color:#94a3b8;text-align:left">${radio.notes || ''}</td></tr>`;
+        return;
+      }
+
+      radio.combos.forEach((combo, i) => {
+        h += `<tr>`;
+        if (i === 0) {
+          h += `<td class="summary-radio-cell" rowspan="${radio.combos.length}">${radio.name}</td>
+                <td rowspan="${radio.combos.length}" style="text-align:center">${vendorBadgeHTML(radio.vendor)}</td>
+                <td rowspan="${radio.combos.length}" style="text-align:center">${categoryBadgeHTML(radio.category)}</td>`;
+        }
+        h += `<td class="opt-label">Option ${i + 1}</td>`;
+        visibleBands.forEach(b => {
+          const v = combo[b];
+          if (v === undefined || v === null) h += `<td class="empty-val">—</td>`;
+          else if (v === 0)                  h += `<td class="zero-val">0 W</td>`;
+          else                               h += `<td class="power-val">${v} W</td>`;
+        });
+        if (i === 0) {
+          h += `<td rowspan="${radio.combos.length}" style="font-size:0.78rem;color:#94a3b8;text-align:left">${radio.notes || '—'}</td>`;
+        }
+        h += `</tr>`;
+      });
+    });
+
+    h += '</tbody>';
+    document.getElementById('summaryTable').innerHTML = h;
+  }
+
+  /* ══════════════════════════════════════
+     TAB SWITCHING
+  ══════════════════════════════════════ */
+  function showTab(tab) {
+    ['byRadio','byTech','summary'].forEach(t =>
+      document.getElementById('tab-' + t).style.display = t === tab ? 'block' : 'none'
+    );
+    document.querySelectorAll('.tab-btn').forEach((btn, i) => {
+      btn.classList.toggle('active',
+        (i === 0 && tab === 'byRadio') ||
+        (i === 1 && tab === 'byTech')  ||
+        (i === 2 && tab === 'summary')
+      );
+    });
+    if (tab === 'summary') buildSummaryTable();
+  }
+</script>
+</body>
+</html>
